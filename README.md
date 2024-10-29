@@ -8,7 +8,7 @@ The Infinia Container Storage Interface (CSI) Driver provides a CSI interface us
 
 |     K8S Version   | Infinia CSI Block driver version|
 |-------------------|----------------|
-| Kubernetes >=1.22 | v1.0.1 [repository](https://github.com/DDNStorage/infinia-csi-driver) |
+| Kubernetes >=1.22 | v1.0.1 [repository](https://github.com/DDNStorage/infinia-csi-driver/tree/1.0.1) |
 
 All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-driver/releases](https://github.com/DDNStorage/infinia-csi-driver/releases)
 
