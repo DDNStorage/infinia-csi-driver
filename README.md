@@ -60,9 +60,7 @@ All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-dr
 
 1. Clone driver repository
    ```bash
-   git clone https://github.com/DDNStorage/red-csi-driver-block.git
-   cd red-csi-driver-block
-   git checkout main
+   git clone -b <version> https://github.com/DDNStorage/infinia-csi-driver.git
    ```
 2. Prepare kubernetes host(s) - install nvme tools and enable nvme TCP kernel module
    ```bash
