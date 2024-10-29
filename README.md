@@ -1,18 +1,16 @@
-# RED block CSI Driver over NVMEoF
+# Infinia block CSI Driver over NVMEoF
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 
-This is a **development branch**, for the most recent stable version see "Supported versions".
-
 ## Overview
-The RED Container Storage Interface (CSI) Driver provides a CSI interface used by Container Orchestrators (CO) to manage the lifecycle of RED cluster's  volumes over NVMEoF protocol.
+The Infinia Container Storage Interface (CSI) Driver provides a CSI interface used by Container Orchestrators (CO) to manage the lifecycle of Infinia cluster's  volumes over NVMEoF protocol.
 
 ## Supported kubernetes versions matrix
 
-|     K8S Version   | RED CSI Block driver version| 
+|     K8S Version   | Infinia CSI Block driver version|
 |-------------------|----------------|
-| Kubernetes >=1.22 | v1.0.1 [repository](https://github.com/DDNStorage/red-csi-driver-block/tree/v1.0.1) |
+| Kubernetes >=1.22 | v1.0.1 [repository](https://github.com/DDNStorage/infinia-csi-driver) |
 
-All releases will be stored here - [https://quay.io/repository/red/csi-driver-block](https://quay.io/repository/red/csi-driver-block)
+All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-driver/releases](https://github.com/DDNStorage/infinia-csi-driver/releases)
 
 ## Feature List
 |Feature|Feature Status|CSI Driver Version|Kubernetes Version| Implemented |
@@ -78,11 +76,11 @@ All releases will be stored here - [https://quay.io/repository/red/csi-driver-bl
    accounts:
      clu1/red/csiAccount:                                       # [required] config section key is path to service account <cluster>/<tenant>/<service account name>
        apis:
-         - https://<RED API IP or FQDN>:443                       # [required] Red cluster REST API endpoint(s)
-       password:  1234                                            # [required] Red cluster REST API password
+         - https://<Infinia API IP or FQDN>:443                       # [required] Infinia cluster REST API endpoint(s)
+       password:  1234                                            # [required] Infinia cluster REST API password
      clu1/otherTenant/csiAccount:
-       apis: https://10.3.4.4:443                                 # [required] Red cluster REST API endpoint(s)
-       password:  1234                                            # [required] Red cluster REST API password
+       apis: https://10.3.4.4:443                                 # [required] Infinia cluster REST API endpoint(s)
+       password:  1234                                            # [required] Infinia cluster REST API password
    ```
   **Note** : List of available configuration parameters in configuration section - [Defaults and params](#Defaults/Configuration/Parameter-options)
 
@@ -104,20 +102,20 @@ All releases will be stored here - [https://quay.io/repository/red/csi-driver-bl
 
 | Default  | Config               |  Parameter    |  Desc                             |
 |----------|----------------------|---------------|-----------------------------------|
-|   -      | apis                 |      -        | List of RED API entrypoints      |
-|   -      | password             |      -        | RED API user password             |
+|   -      | apis                 |      -        | List of Infinia API entrypoints      |
+|   -      | password             |      -        | Infinia API user password             |
 |   -      | zone                 |      -        | Zone to match topology.kubernetes.io/zone            |
 |   -      | insecureSkipVerify   |      -        | TLS certificates check will be skipped when `true` (default: 'true')  |
-|   []     | default_instance_ids |   instances   | Red cluster instance IDs to expose|
+|   []     | default_instance_ids |   instances   | Infinia cluster instance IDs to expose|
 |   4420   | default_data_port    |   dataport    | Volume expose port                |
 |   -      | owneruid             |   owneruid    | custom user uid (numeric)         |
 |   -      | groupuid             |   groupuid    | custom group uid (numeric)        |
 |   -      | perms                |   perms       | custom permissions (octal)        |
 |   -      |                      |   account     | configuration account path (cluster/tenant/serviceAccountName) |
-|   -      |                      |   service     | red service path (subtenant/serviceName) |
+|   -      |                      |   service     | Infinia service path (subtenant/serviceName) |
 
 
-**Note**: all default parameters (`Default`) may be overwritten in RED CSI driver configuration or by specific _StorageClass_ or PV configuration parameters.
+**Note**: all default parameters (`Default`) may be overwritten in Infinia CSI driver configuration or by specific _StorageClass_ or PV configuration parameters.
 
 **Note**: `default_instance_ids` CSI driver config parameter is []int. Provides default volume allocation for expose. 
 
@@ -127,9 +125,9 @@ All releases will be stored here - [https://quay.io/repository/red/csi-driver-bl
 
 **Note**: `perms` must be octal value in string representation
 
-## Update RED Block CSI driver configuration/secret
+## Update Infinia Block CSI driver configuration/secret
 
-To update already existing RED Block CSI driver configuration stored in k8s secret
+To update already existing Infinia Block CSI driver configuration stored in k8s secret
 
 ```bash
 kubectl create secret generic red-csi-driver-block-config --save-config --dry-run=client --from-file=deploy/kubernetes/red-csi-driver-block-config.yaml -n red-block-csi -o yaml | kubectl apply -f -
@@ -157,7 +155,7 @@ serviceName: red-block-csi-controller-service
 replicas: 1  # Change this to 2 or more.
 ```
 
-RED CSI driver's pods should be running after installation:
+Infinia CSI driver's pods should be running after installation:
 
 ```bash
 $ kubectl get pods
@@ -190,8 +188,8 @@ parameters:
 ``` 
 
 Where:
-  - `account` - exact RED service account path (<cluster/tenant/serviceAccountName>)
-  - `service` - exact RED service path (<subtenant/serviceName>)
+  - `account` - exact Infinia service account path (<cluster/tenant/serviceAccountName>)
+  - `service` - exact Infinia service path (<subtenant/serviceName>)
 
 [Full list of default values and parameters](#defaults/configuration/parameter-options)
 
@@ -219,16 +217,16 @@ mountOptions:                        # list of options for `mount -o ...` comman
 #    values:
 #    - us-east
 parameters:
-  account: "clu1/red/csiAccount"    # [REQUIRED] exact RED service account path (<cluster/teant/serviceAccountName>)
-  service: "red/csiService"         # [REQUIRED] exact RED service path (<subtenant/serviceName>)
+  account: "clu1/red/csiAccount"    # [REQUIRED] exact Infinia service account path (<cluster/teant/serviceAccountName>)
+  service: "red/csiService"         # [REQUIRED] exact Infinia service path (<subtenant/serviceName>)
 ```
 
 #### Parameters
 
 | Name           | Description                                            | Example                                               |
 |----------------|--------------------------------------------------------|-------------------------------------------------------|
-| `account`      | RED CSI driver configuration key as well path to service account | `clu1/red/csiAccount`                                        |
-| `service`      | Exact RED service path (<subtenant/serviceName>) | `red/csiService`                                        |
+| `account`      | Infinia CSI driver configuration key as well path to service account | `clu1/red/csiAccount`                                        |
+| `service`      | Exact Infinia service path (<subtenant/serviceName>) | `red/csiService`                                        |
 
 #### Example
 
@@ -243,7 +241,7 @@ kubectl delete -f examples/kubernetes/nginx-dynamic-volume.yaml
 
 ### Pre-provisioned volumes
 
-The driver can use already existing RED volumes that has exports (automatic export will be added soon)
+The driver can use already existing Infinia volumes that has exports (automatic export will be added soon)
 in this case, _StorageClass_, _PersistentVolume_ and _PersistentVolumeClaim_ should be configured.
 
 #### _StorageClass_ configuration
@@ -287,7 +285,7 @@ CSI Parameters:
 
 | Name           | Description                                                       | Example                              |
 |----------------|-------------------------------------------------------------------|--------------------------------------|
-| `driver`       | installed RED CSI block driver name "block.csi.red.ddn.com"        | `block.csi.red.ddn.com` |
+| `driver`       | installed Infinia CSI block driver name "block.csi.red.ddn.com"        | `block.csi.red.ddn.com` |
 | `volumeHandle` | CSI VolumeID [cluster/tenant/serviceAccountName:subtenant/serviceName/volumeName] | `clu1/red/csiAccount:red/csiService/vol1`               |
 | `volumeAttributes` | CSI driver parametrs map [Defaults and params](#Defaults/Configuration/Parameter-options)   |  |
 
@@ -315,7 +313,7 @@ spec:
 
 Run nginx server using PersistentVolume.
 
-**Note:** Those RED objects MUST exist before static volume usage:
+**Note:** Those Infinia objects MUST exist before static volume usage:
 service account: `cluster/tenant/serviceAccount`. 
 service : `cluster/tenant/subtenant/serviceName`.
 volume : `cluster/tenant/subtenant/dataset/volume`.

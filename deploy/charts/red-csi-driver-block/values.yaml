@@ -24,7 +24,7 @@ driver:
   name: block.csi.red.ddn.com
   image:
     repository: quay.io/red/csi-driver-block
-    tag: release
+    tag: v1.0.1
 
 # Definitions for CSI controller manifests
 controller:
