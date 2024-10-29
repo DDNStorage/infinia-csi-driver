@@ -1,0 +1,22 @@
+# red-csi-driver config file to create k8s secret
+#
+# $ kubectl create secret generic red-csi-driver-block-config \
+#   --from-file=deploy/kubernetes/red-csi-driver-block-config.yaml
+#
+
+accounts:
+  clu1/red/csiAccount:
+    apis:
+    - https://10.128.0.35:443 # [required] RED REST API endpoint(s)
+    - https://10.128.0.93:443
+    password: 1234 # [required] RED REST API password
+    #default_instance_ids: 
+    #- 1
+    #- 2
+    #- 3
+    #default_data_port: 2240
+    #default_blocksize: 4096
+    #owneruid: 1000
+    #groupuid: 1000
+    #perms: 0777
+debug: false # more logs

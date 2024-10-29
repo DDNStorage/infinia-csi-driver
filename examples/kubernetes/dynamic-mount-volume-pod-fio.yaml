@@ -1,0 +1,68 @@
+# Fio pod with dynamic storage creation and NVMEOF device mount using RED Block CSI driver
+#
+# $ kubectl apply -f examples/kubernetes/fio-config.yaml
+# $ kubectl apply -f examples/kubernetes/dynamic-mount-volume-pod-fio.yaml
+# $ kubectl logs -p fio-dynamic-mount-volume
+# --------------------------------------
+# RED CSI Driver - Storage Class
+# --------------------------------------
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: red-block-csi-driver-sc-fio-dynamic-mount
+provisioner: block.csi.red.ddn.com
+#allowVolumeExpansion: true
+parameters:
+  account: clu1/red/csiAccount
+  service: red/csiService
+  #one og those params MUST be provided here or in the config secret
+  #instances: "1,2,3"
+---
+
+# ------------------------------------------------
+# RED CSI Driver - Persistent Volume Claim
+# ------------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-block-csi-driver-pvc-fio-dynamic-mount
+spec:
+  storageClassName: red-block-csi-driver-sc-fio-dynamic-mount
+  accessModes:
+  - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+---
+# ---------
+# FIO pod
+# ---------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: fio-dynamic-mount-volume
+spec:
+  containers:
+  - image: joshuarobinson/fio:3.19
+    imagePullPolicy: IfNotPresent
+    name: fio
+    command: ["sh"]
+    args: ["-c", "echo ${HOSTNAME} && mkdir -p /scratch/${HOSTNAME} && fio /configs/fio.job --eta=never --directory=/scratch/${HOSTNAME}"]
+    volumeMounts:
+    - mountPath: /configs
+      name: fio-config-vol
+    - mountPath: /scratch
+      name: red-block-csi-driver-data
+  restartPolicy: Always
+  volumes:
+  - name: fio-config-vol
+    configMap:
+      name: fio-job-config
+  - name: red-block-csi-driver-data
+    persistentVolumeClaim:
+      claimName: red-block-csi-driver-pvc-fio-dynamic-mount
+      readOnly: false

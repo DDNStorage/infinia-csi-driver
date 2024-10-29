@@ -1,0 +1,83 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: {{ .Values.controller.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  # serviceName: "{{ .Values.controller.name }}-{{ .Values.serviePostfix }}"
+  replicas: {{ .Values.controller.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.controller.name }} # has to match .spec.template.metadata.labels
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.controller.name }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.controller.securitycontext | nindent 8 }}
+      serviceAccount: "{{ .Values.controller.name }}-{{ .Values.serviceAccountPostfix }}"
+      containers:
+        - name: {{ .Values.controller.attacher.name }}
+          image: "{{ .Values.controller.attacher.image.repository }}:{{ .Values.controller.attacher.image.tag }}"
+          imagePullPolicy: {{ .Values.controller.attacher.image.pullPolicy }}
+          args:
+            - --csi-address=/var/lib/csi/sockets/pluginproxy/{{ .Values.pluginSocketFile }}
+            - --v=2
+            - --leader-election=true
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+        # csi-provisioner: sidecar container that watches Kubernetes PersistentVolumeClaim objects
+        # and triggers CreateVolume/DeleteVolume against a CSI endpoint
+        - name: {{ .Values.controller.provisioner.name }}
+          image: "{{ .Values.controller.provisioner.image.repository }}:{{ .Values.controller.provisioner.image.tag }}"
+          imagePullPolicy: {{ .Values.controller.provisioner.image.pullPolicy }}
+          args:
+            - --csi-address=/var/lib/csi/sockets/pluginproxy/{{ .Values.pluginSocketFile }}
+            - --volume-name-prefix=pvc-red
+            - --strict-topology
+            - --immediate-topology=false
+            - --feature-gates=Topology=true
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy
+          resources:
+{{ toYaml .Values.controller.provisioner.resources | indent 12 }}
+        - name: {{ .Values.controller.resizer.name }}
+          image: "{{ .Values.controller.resizer.image.repository }}:{{ .Values.controller.resizer.image.tag }}"
+          args:
+            - --csi-address=/var/lib/csi/sockets/pluginproxy/{{ .Values.pluginSocketFile }}
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          imagePullPolicy: {{ .Values.controller.resizer.image.pullPolicy }}
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
+        - name: {{ .Values.controller.driver.name }}
+          image: "{{ .Values.driver.image.repository }}:{{ .Values.driver.image.tag }}"
+          imagePullPolicy: {{ .Values.controller.driver.image.pullPolicy }}
+          args:
+            - --nodeid=$(KUBE_NODE_NAME)
+            - --endpoint=unix://csi/{{ .Values.pluginSocketFile }}
+            - --role=controller
+          env:
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /csi
+            - name: secret
+              mountPath: /config
+              readOnly: true
+          resources:
+{{ toYaml .Values.controller.driver.resources | indent 12 }}
+      volumes:
+        - name: socket-dir
+          emptyDir:
+        - name: secret
+          secret:
+            secretName: {{ .Values.config.secretName }}

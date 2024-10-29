@@ -1,0 +1,107 @@
+# RED CSI Driver configuration part - how to connect to the RED realm(s)
+config:
+  # Specifies the name of the k8s secret to be created based on the configuration
+  # The secret will be created in the same namespace as CSI driver pods
+  secretName: red-csi-driver-block-config
+  accounts:
+    clu1/red/csiAccount:
+      apis:
+      - https://<IP or FQDN>:443 # [required] RED REST API endpoint(s)
+      password: <PASSWORD> # [required] RED REST API password
+      #default_instance_ids:
+      #- 1
+      #- 2
+      #- 3
+      #default_data_port: 2240
+      #default_blocksize: 4096
+      #owneruid: 1000
+      #groupuid: 1000
+      #perms: 0777
+  debug: false # more logs
+
+# Defining RED CSI driver name and image to deploy
+driver:
+  name: block.csi.red.ddn.com
+  image:
+    repository: quay.io/red/csi-driver-block
+    tag: release
+
+# Definitions for CSI controller manifests
+controller:
+  name: red-block-csi-controller
+  replicas: 1
+  securitycontext:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 1000
+  provisioner:
+    name: csi-provisioner
+    image:
+      repository: registry.k8s.io/sig-storage/csi-provisioner
+      tag: v2.2.0
+      pullPolicy: IfNotPresent
+    resources: {}
+  driver:
+    name: driver
+    image:
+      # repo and tag will be taken from .driver section
+      pullPolicy: Always
+    resources: {}
+  resizer:
+    name: csi-resizer
+    image:
+      repository: registry.k8s.io/sig-storage/csi-resizer
+      tag: v1.7.0
+      pullPolicy: IfNotPresent
+    resources: {}
+  attacher:
+    name: csi-attacher
+    image:
+      repository: registry.k8s.io/sig-storage/csi-attacher
+      tag: v4.3.0
+      pullPolicy: IfNotPresent
+    resources: {}
+# Definitions for CSI node manifests
+node:
+  name: red-block-csi-node
+  securitycontext:
+    runAsUser: 0
+    runAsGroup: 0
+    fsGroup: 1000
+  registrar:
+    name: driver-registrar
+    image:
+      repository: registry.k8s.io/sig-storage/csi-node-driver-registrar
+      tag: v2.5.1
+      pullPolicy: IfNotPresent
+    resources: {}
+  driver:
+    name: driver
+    image:
+      # repo and tag will be taken from .driver section
+      pullPolicy: Always
+    securitycontext:
+      privileged: true
+      capabilities:
+        add: ['SYS_ADMIN']
+      allowPrivilegeEscalation: true
+    resources: {}
+
+#########################################################
+# Variables for 'internal' use please use with caution! #
+#########################################################
+
+# The filename of the plugin socket
+pluginSocketFile: csi.sock
+# kubelet working directory,can be set using `--root-dir` when starting kubelet.
+kubeletDir: /var/lib/kubelet
+
+# posfix for all defined service account names (example: red-block-csi-node-service-account)
+servicePostfix: service
+serviceAccountPostfix: service-account
+clusterRoleBindingPostfix: cluster-role-binding
+clusterRolePostfix: cluster-role
+
+# Volumes attach/mount props
+driverAttachRequired: false
+driverInfoOnMount: false

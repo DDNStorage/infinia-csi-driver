@@ -1,0 +1,93 @@
+# Nginx pod with pre provisioned storage using RED CSI driver
+#
+# $ kubectl apply -f examples/kubernetes/static-mount-volume-pod.yaml
+#
+
+
+# --------------------------------------
+# RED Block CSI Driver - Storage Class
+# --------------------------------------
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: red-block-csi-driver-sc-persistent-mount-block
+provisioner: block.csi.red.ddn.com
+---
+
+# ------------------------------------------
+# RED CSI Driver - Persistent Volume
+# ------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: red-block-csi-driver-pv-persistent-mount-block
+  labels:
+    name: red-block-csi-driver-pv-persistent-mount-block
+spec:
+  storageClassName: red-block-csi-driver-sc-persistent-mount-block
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 1Gi
+  csi:
+    driver: block.csi.red.ddn.com
+    # volumeHandle format: <cluster/tenant/service-account>:<subtenant/service/volume-name>
+    volumeHandle: clu1/red/csiAccount:red/csiService/vol1
+    fsType: ext3
+    volumeAttributes:
+    #one of params MUST be provided for correct red volume mount 
+    #instances: "1,2,3"
+    #mountOptions:  # list of options for `mount` command
+    #  - noatime    #
+---
+
+
+# ------------------------------------------------
+# RED CSI Driver - Persistent Volume Claim
+# ------------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-block-csi-driver-pvc-persistent-mount-block
+spec:
+  storageClassName: red-block-csi-driver-sc-persistent-mount-block
+  accessModes:
+  - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      # to create 1-1 relationship for pod - persistent volume use unique labels
+      name: red-block-csi-driver-pv-persistent-mount-block
+---
+
+
+# ---------
+# Nginx pod
+# ---------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-persistent-mount-block-volume
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: IfNotPresent
+    name: nginx
+    ports:
+    - containerPort: 80
+      protocol: TCP
+    volumeMounts:
+    - mountPath: /usr/share/nginx/html
+      name: red-block-csi-driver-data
+  volumes:
+  - name: red-block-csi-driver-data
+    persistentVolumeClaim:
+      claimName: red-block-csi-driver-pvc-persistent-mount-block
+      readOnly: false

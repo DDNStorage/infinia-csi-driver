@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: "{{ .Values.controller.name }}-{{ .Values.servicePostfix }}"
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ .Values.controller.name }}
+spec:
+  selector:
+    app: {{ .Values.controller.name }}
+  ports:
+    - name: dummy
+      port: 12345

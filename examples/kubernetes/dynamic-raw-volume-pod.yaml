@@ -1,0 +1,66 @@
+# Nginx pod with dynamic storage creation and raw device using RED Block CSI driver
+#
+# $ kubectl apply -f examples/kubernetes/dynamic-raw-volume-pod.yaml
+#
+# --------------------------------------
+# RED CSI Driver - Storage Class
+# --------------------------------------
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: red-raw-block-csi-driver-sc-nginx-dynamic-volume
+provisioner: block.csi.red.ddn.com
+#allowVolumeExpansion: true
+parameters:
+  # required param
+  account: clu1/red/csiAccount
+  service: red/csiService
+  # optional params
+  #instances: "1,2, 3"
+  #owneruid: "1000"
+  #groupuid: "1000"
+  #perms: "0660"
+---
+
+# ------------------------------------------------
+# RED CSI Driver - Persistent Volume Claim
+# ------------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-raw-block-csi-driver-pvc-nginx-dynamic-volume
+spec:
+  storageClassName: red-raw-block-csi-driver-sc-nginx-dynamic-volume
+  accessModes:
+  - ReadWriteMany
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+---
+# ---------
+# Nginx pod
+# ---------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-dynamic-raw-volume
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: IfNotPresent
+    name: nginx
+    ports:
+    - containerPort: 80
+      protocol: TCP
+    volumeDevices:
+    - devicePath: /dev/sdf
+      name: block
+  volumes:
+  - name: block
+    persistentVolumeClaim:
+      claimName: red-raw-block-csi-driver-pvc-nginx-dynamic-volume
+      readOnly: false

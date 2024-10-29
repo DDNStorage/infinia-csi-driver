@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: {{ .Values.node.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.node.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.node.name }}
+    spec:
+      serviceAccount: "{{ .Values.node.name }}-{{ .Values.serviceAccountPostfix }}"
+      securityContext:
+        {{- toYaml .Values.node.securitycontext | nindent 8 }}
+      hostNetwork: true
+      containers:
+        # driver-registrar: sidecar container that:
+        # 1) registers the CSI driver with kubelet
+        # 2) adds the drivers custom NodeId to a label on the Kubernetes Node API Object
+        - name: {{ .Values.node.registrar.name }}
+          image: "{{ .Values.node.registrar.image.repository }}:{{ .Values.node.registrar.image.tag }}"
+          imagePullPolicy: {{ .Values.node.registrar.image.pullPolicy }}
+          args:
+            - "--v=3"
+            - "--csi-address=/csi/{{ .Values.pluginSocketFile }}"
+            - "--kubelet-registration-path=/var/lib/kubelet/plugins/{{ .Values.driver.name }}/{{ .Values.pluginSocketFile }}"
+          env:
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: registration-dir
+              mountPath: /registration
+          resources:
+{{ toYaml .Values.node.registrar.resources | indent 12 }}
+        - name: {{ .Values.node.driver.name }}
+          securityContext:
+            {{- toYaml .Values.node.driver.securitycontext | nindent 12 }}
+          image: "{{- .Values.driver.image.repository -}}:{{- .Values.driver.image.tag -}}"
+          imagePullPolicy: {{ .Values.node.driver.image.pullPolicy }}
+          args:
+            - --nodeid=$(KUBE_NODE_NAME)
+            - --endpoint=unix://csi/{{ .Values.pluginSocketFile }}
+            - --role=node
+          env:
+            - name: KUBE_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - name: plugin-dir
+              mountPath: /csi
+            - name: secret
+              mountPath: /config
+            - name: host-dev
+              mountPath: /dev
+            - name: kubelet-mount-dir
+              mountPath: /var/lib/kubelet
+              mountPropagation: Bidirectional
+          resources:
+{{ toYaml .Values.node.driver.resources | indent 12 }}
+      volumes:
+        - name: plugin-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins/block.csi.red.ddn.com/
+            type: DirectoryOrCreate
+        - name: registration-dir
+          hostPath:
+            path: /var/lib/kubelet/plugins_registry/
+            type: Directory
+        - name: kubelet-mount-dir
+          hostPath:
+            path: /var/lib/kubelet
+            type: Directory
+        - name: secret
+          secret:
+            secretName: {{ .Values.config.secretName }}
+        - name: host-dev
+          hostPath:
+            path: /dev
+            type: Directory

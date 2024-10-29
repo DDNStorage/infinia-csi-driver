@@ -1,0 +1,10 @@
+# --------------------------------------
+# RED CSI Driver - Storage Class
+# --------------------------------------
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: red-block-csi-driver-sc-nginx-dynamic
+provisioner: block.csi.red.ddn.com
+# allowVolumeExpansion: true

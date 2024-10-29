@@ -1,0 +1,14 @@
+apiVersion: v2
+appVersion: "0.1.1"
+kubeVersion: ">= 1.22.0"
+description: Container Storage Interface (CSI) block driver, provisioner and attacher for RED cluster
+home: https://github.com/DDNStorage/red-csi-driver-block
+#icon: https://github.com/DDNStorage/red-csi-driver-block/deploy/charts/red-csi-driver-block/logo.png
+keywords:
+- RED
+- CSI block driver
+- red-csi-driver-block
+name: red-csi-driver-block
+sources:
+- https://github.com/DDNStorage/red-csi-driver-block/deploy/charts/red-csi-driver-block
+version: "0.1.1"

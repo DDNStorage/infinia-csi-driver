@@ -1,0 +1,77 @@
+# Nginx pod with dynamic storage creation using RED Block CSI driver
+#
+# $ kubectl apply -f examples/kubernetes/deployment-dynamic-raw-volume.yaml
+#
+# --------------------------------------
+# RED Block CSI Driver - Storage Class
+# --------------------------------------
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: red-raw-block-csi-driver-sc-nginx-dynamic-deployment
+provisioner: block.csi.red.ddn.com
+allowVolumeExpansion: true
+parameters:
+  # required parameter
+  config: "clu1/red/csiAccount"
+  service: "/red/csiService"
+  # could be ommited
+  #owneruid: "1000"
+  #groupuid: "1000"
+  #perms: "0660"
+---
+
+# ------------------------------------------------
+# NexentaStor CSI Driver - Persistent Volume Claim
+# ------------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-raw-block-csi-driver-pvc-nginx-dynamic-deployment
+spec:
+  storageClassName: red-raw-block-csi-driver-sc-nginx-dynamic-deployment
+  accessModes:
+  - ReadWriteMany
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+---
+
+# ---------
+# Nginx deployment
+# ---------
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment-dynamic
+  labels:
+    app.kubernetes.io/name: nginx-deployment-dynamic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nginx-deployment-dynamic
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nginx-deployment-dynamic
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: IfNotPresent
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        volumeDevices:
+        - devicePath: /dev/sdf
+          name: block
+      volumes:
+      - name: block
+        persistentVolumeClaim:
+          claimName: red-raw-block-csi-driver-pvc-nginx-dynamic-deployment
+          readOnly: false

@@ -1,0 +1,41 @@
+# ------------------------------------------------
+# RED CSI Driver - Persistent Volume Claim
+# ------------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-raw-block-multiple-pod-pvc-{{pod-index}}
+spec:
+  storageClassName: red-raw-block-multiple-pod-sc
+  accessModes:
+  - ReadWriteMany
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+---
+# ---------
+# Nginx pod
+# ---------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-dynamic-raw-volume-{{pod-index}}
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: IfNotPresent
+    name: nginx
+    ports:
+    - containerPort: 80
+      protocol: TCP
+    volumeDevices:
+    - devicePath: /dev/sdf
+      name: block
+  volumes:
+  - name: block
+    persistentVolumeClaim:
+      claimName: red-raw-block-multiple-pod-pvc-{{pod-index}}
+      readOnly: false

@@ -1,0 +1,14 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: "{{ .Values.controller.name }}-{{ .Values.clusterRoleBindingPostfix }}"
+  labels:
+    app.kubernetes.io/name: {{ .Values.controller.name }}
+subjects:
+  - kind: ServiceAccount
+    name: "{{ .Values.controller.name }}-{{ .Values.serviceAccountPostfix }}"
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: "{{ .Values.controller.name }}-{{ .Values.clusterRolePostfix }}"
+  apiGroup: rbac.authorization.k8s.io

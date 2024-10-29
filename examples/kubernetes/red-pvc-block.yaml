@@ -1,0 +1,17 @@
+# ------------------------------------------------
+# RED Block CSI Driver - Persistent Volume Claim
+# ------------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-block-csi-driver-pvc-nginx-dynamic
+spec:
+  storageClassName: red-block-csi-driver-sc-nginx-dynamic
+  accessModes:
+    - ReadWriteMany
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 2Gi
+---

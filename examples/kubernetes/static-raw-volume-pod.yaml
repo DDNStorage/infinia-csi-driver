@@ -1,0 +1,94 @@
+# Nginx pod with pre provisioned raw device using RED CSI driver
+#
+# $ kubectl apply -f examples/kubernetes/statis-raw-volume-pod.yaml
+#
+
+
+# --------------------------------------
+# RED Block CSI Driver - Storage Class
+# --------------------------------------
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: red-block-csi-driver-sc-persistent-raw-block
+provisioner: block.csi.red.ddn.com
+---
+
+# ------------------------------------------
+# RED CSI Driver - Persistent Volume
+# ------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: red-block-csi-driver-pv-persistent-raw-block
+  labels:
+    name: red-block-csi-driver-pv-persistent-raw-block
+spec:
+  storageClassName: red-block-csi-driver-sc-persistent-raw-block
+  accessModes:
+  - ReadWriteMany
+  volumeMode: Block
+  capacity:
+    storage: 1Gi
+  csi:
+    driver: block.csi.red.ddn.com
+    # volumeHandle format: <configName>:<path-to-ired-volume>
+    volumeHandle: clu1/red/csiAccount:red/csiService/vol1
+    # fsType: "ext4"
+    volumeAttributes:
+      #one of those params MUST be provided here or in the secret to provide correct red volume mount
+      instances: "1,2,3"
+  mountOptions: # list of options for `mount` command
+  - noatime #
+---
+
+
+# ------------------------------------------------
+# RED CSI Driver - Persistent Volume Claim
+# ------------------------------------------------
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-block-csi-driver-pvc-persistent-raw-block
+spec:
+  storageClassName: red-block-csi-driver-sc-persistent-raw-block
+  accessModes:
+  - ReadWriteMany
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      # to create 1-1 relationship for pod - persistent volume use unique labels
+      name: red-block-csi-driver-pv-persistent-raw-block
+---
+
+
+# ---------
+# Nginx pod
+# ---------
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-persistent-raw-block-volume
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: IfNotPresent
+    name: nginx
+    ports:
+    - containerPort: 80
+      protocol: TCP
+    volumeDevices:
+    - devicePath: /dev/sdf
+      name: block
+  volumes:
+  - name: block
+    persistentVolumeClaim:
+      claimName: red-block-csi-driver-pvc-persistent-raw-block
+      readOnly: false

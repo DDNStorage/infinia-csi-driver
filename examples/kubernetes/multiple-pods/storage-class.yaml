@@ -1,0 +1,20 @@
+
+# --------------------------------------
+# RED CSI Driver - Storage Class
+# --------------------------------------
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: red-raw-block-multiple-pods-sc
+provisioner: block.csi.red.ddn.com
+#allowVolumeExpansion: true
+parameters:
+  # required param
+  account: clu1/red/csiAccount
+  service: red/csiService
+  # optional params
+  #instances: "1,2, 3"
+  #owneruid: "1000"
+  #groupuid: "1000"
+  #perms: "0660"
