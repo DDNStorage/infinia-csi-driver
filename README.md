@@ -21,7 +21,7 @@ All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-dr
 |RO mode|GA|>= v1.0.1|>=1.22| yes |
 |Raw block device|GA|>= v1.0.1|>=1.22| yes |
 |StorageClass Secrets|Beta|>= v1.0.1|>=1.22| yes |
-|Expand volume|GA|>= v1.0.1|>=1.22| yes |
+|Expand volume|GA|>= v1.0.1|>=1.22| no |
 <!--
 |Creating and deleting snapshot|GA|>= v1.0.0|>= v1.0.0|>=1.17|
 |Provision volume from snapshot|GA|>= v1.0.0|>= v1.0.0|>=1.17|
