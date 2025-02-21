@@ -8,7 +8,7 @@ The Infinia Container Storage Interface (CSI) Driver provides a CSI interface us
 
 |     K8S Version   | Infinia CSI Block driver version|
 |-------------------|----------------|
-| Kubernetes >=1.22 | v1.0.1 [repository](https://github.com/DDNStorage/infinia-csi-driver/tree/1.0.1) |
+| Kubernetes >=1.22 | v1.0.1 [repository](https://github.com/DDNStorage/infinia-csi-driver) |
 
 All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-driver/releases](https://github.com/DDNStorage/infinia-csi-driver/releases)
 
@@ -80,7 +80,7 @@ All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-dr
        apis: https://10.3.4.4:443                                 # [required] Infinia cluster REST API endpoint(s)
        password:  1234                                            # [required] Infinia cluster REST API password
    ```
-  **Note** : List of available configuration parameters in configuration section - [Defaults and params](#Defaults/Configuration/Parameter-options)
+  **Note** : List of available configuration parameters in configuration section - [Defaults and params](#defaultsconfigurationparameter-options)
 
 4. Create Kubernetes namespace:
     ```bash
@@ -95,6 +95,43 @@ All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-dr
    kubectl apply -f deploy/kubernetes/red-csi-driver-block.yaml
    ```
 7. Installation is done
+
+## Installation using Helm Chart
+
+To install the Chart into your Kubernetes cluster
+
+Run commands on top of `https://github.com/DDNStorage/infinia-csi-driver.git` repository
+
+- Prepare RED cluster configuration in `./deploy/charts/red-csi-driver-block/values.yaml` file
+
+  Specify RED Cluster API endpoint(s), user(s) and password(s) into config section of the file
+  by the schema
+
+  ```yaml
+  config:
+    secretName: red-csi-driver-block-config
+    accounts:
+      clu1/red/csiAccount:
+        apis:
+        - https://<IP or FQDN>:443 # [required] RED REST API endpoint(s)
+        password: <PASSWORD> # [required] RED REST API password
+  ```
+  [Defaults and params](#defaultsconfigurationparameter-options)
+
+  **It will create secret based on configuration in the same namespace as specified during `helm install`**
+
+
+- Run the installation
+
+```bash
+   helm install --create-namespace --namespace red-block-csi red-csi-driver-block ./deploy/charts/red-csi-driver-block
+```
+
+- After installation succeeds, you can get a status of Chart
+
+```bash
+helm status --namespace red-block-csi red-csi-driver-block
+```
 
 ## Defaults/Configuration/Parameter options
 
@@ -122,6 +159,94 @@ All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-dr
 **Note**: `owneruid` and `groupuid` must be defined together as numeric values in string representation
 
 **Note**: `perms` must be octal value in string representation
+
+## Using storage class secrets
+
+Storage class secrets can be used to override config values or not use the config file/secret at all.
+This is a convenient way of using multiple service accounts in the driver without having to change the config.
+
+List of storage class secret parameters:
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+|   apis    |   yes    | Comma separated list of api endpoints for service account |
+|  password |   yes    | Password for service account |
+| insecureSkipVerify | no | Defines is self signed certificates should be allowed. Default is `true` |
+
+First, create the secret
+```bash
+kubectl create -n red-block-csi secret generic red-csi-multi-tenancy1 --from-literal=apis=https://10.10.1.11:443,https://10.10.1.13:443 --from-literal=password=12341234
+```
+
+Now we can create a storage class that will use the secret
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: red-block-csi-driver-sc-with-secret
+provisioner: block.csi.red.ddn.com
+parameters:
+  account: c1/red/csi-multi-tenancy
+  service: red/csi-multi-tenancy
+  csi.storage.k8s.io/provisioner-secret-name: red-csi-multi-tenancy1
+  csi.storage.k8s.io/provisioner-secret-namespace: red-block-csi
+  csi.storage.k8s.io/controller-expand-secret-name: red-csi-multi-tenancy1
+  csi.storage.k8s.io/controller-expand-secret-namespace: red-block-csi
+  csi.storage.k8s.io/node-stage-secret-name: red-csi-multi-tenancy1
+  csi.storage.k8s.io/node-stage-secret-namespace: red-block-csi
+  csi.storage.k8s.io/node-publish-secret-name: red-csi-multi-tenancy1
+  csi.storage.k8s.io/node-publish-secret-namespace: red-block-csi
+---
+
+```
+
+Apply storage class manifest
+```bash
+kubectl apply -f examples/kubernetes/sc-with-secret.yaml
+```
+
+Now we can create a PVC and a pod as usual
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-block-csi-driver-pvc-nginx-dynamic-mount-sc-secret
+spec:
+  storageClassName: red-block-csi-driver-sc-with-secret
+  accessModes:
+  - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+```
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-dynamic-mount-volume
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: IfNotPresent
+    name: nginx
+    ports:
+    - containerPort: 80
+      protocol: TCP
+    volumeMounts:
+    - mountPath: /mountedDisk
+      name: red-block-csi-driver-data
+  volumes:
+  - name: red-block-csi-driver-data
+    persistentVolumeClaim:
+      claimName: red-block-csi-driver-pvc-nginx-dynamic-mount-sc-secret
+      readOnly: false
+
+
+```
+
+```bash
+kubectl apply -f examples/kubernetes/pvc-pod-sc-with-secret.yaml
+```
 
 ## Update Infinia Block CSI driver configuration/secret
 
@@ -165,7 +290,7 @@ red-block-csi-node-xtmgv     2/2     Running   0          23h
 ```
 
 ## Storage class parameters
-Storage classes provide the capability to define parameters per storageClass instead of using config values [Defaults and params](#Defaults/Configuration/Parameter-options)
+Storage classes provide the capability to define parameters per storageClass instead of using config values [Defaults and params](#defaultsconfigurationparameter-options)
 
 This is very useful to provide flexibility while using the same driver.
 
@@ -189,7 +314,7 @@ Where:
   - `account` - exact Infinia service account path (<cluster/tenant/serviceAccountName>)
   - `service` - exact Infinia service path (<subtenant/serviceName>)
 
-[Full list of default values and parameters](#defaults/configuration/parameter-options)
+[Full list of default values and parameters](#defaultsconfigurationparameter-options)
 
 
 ## Usage
@@ -266,7 +391,7 @@ metadata:
 spec:
   storageClassName: red-csi-driver-block-sc-nginx-persistent
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   capacity:
     storage: 1Gi
   csi:
@@ -285,7 +410,7 @@ CSI Parameters:
 |----------------|-------------------------------------------------------------------|--------------------------------------|
 | `driver`       | installed Infinia CSI block driver name "block.csi.red.ddn.com"        | `block.csi.red.ddn.com` |
 | `volumeHandle` | CSI VolumeID [cluster/tenant/serviceAccountName:subtenant/serviceName/volumeName] | `clu1/red/csiAccount:red/csiService/vol1`               |
-| `volumeAttributes` | CSI driver parametrs map [Defaults and params](#Defaults/Configuration/Parameter-options)   |  |
+| `volumeAttributes` | CSI driver parametrs map [Defaults and params](#defaultsconfigurationparameter-options)   |  |
 
 #### _PersistentVolumeClaim_ (pointed to created _PersistentVolume_)
 
@@ -297,7 +422,7 @@ metadata:
 spec:
   storageClassName: red-csi-driver-block-sc-nginx-persistent
   accessModes:
-    - ReadWriteMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
@@ -371,6 +496,25 @@ kubectl delete -f deploy/kubernetes/red-csi-driver-block.yaml
 
 # delete secret
 kubectl delete secret red-csi-driver-block-config
+```
+
+## Uninstall Chart
+
+If you want to delete your Chart, use this command
+
+```bash
+helm uninstall -n red-block-csi red-csi-driver-block
+```
+
+## Upgrade Chart
+
+If you want to upgrade your Chart to different RED CSI driver release
+
+- Change driver.tag value in ./deploy/charts/red-csi-driver-block/values.yaml file
+- Apply command
+
+```bash
+helm upgrade --namespace red-block-csi red-csi-driver-block ./deploy/charts/red-csi-driver-block
 ```
 
 ## Troubleshooting
