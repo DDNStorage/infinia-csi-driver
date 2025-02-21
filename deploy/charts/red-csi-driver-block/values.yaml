@@ -24,7 +24,7 @@ driver:
   name: block.csi.red.ddn.com
   image:
     repository: quay.io/red/csi-driver-block
-    tag: v1.0.1
+    tag: v1.1.0
 
 # Definitions for CSI controller manifests
 controller:
@@ -46,13 +46,6 @@ controller:
     image:
       # repo and tag will be taken from .driver section
       pullPolicy: Always
-    resources: {}
-  resizer:
-    name: csi-resizer
-    image:
-      repository: registry.k8s.io/sig-storage/csi-resizer
-      tag: v1.7.0
-      pullPolicy: IfNotPresent
     resources: {}
   attacher:
     name: csi-attacher
