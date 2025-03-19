@@ -8,7 +8,7 @@ The Infinia Container Storage Interface (CSI) Driver provides a CSI interface us
 
 |     K8S Version   | Infinia CSI Block driver version|
 |-------------------|----------------|
-| Kubernetes >=1.22 | >=v1.0.1 [repository](https://github.com/DDNStorage/infinia-csi-driver/tree/v1.1.0) |
+| Kubernetes >=1.22 | v1.0.1 [repository](https://github.com/DDNStorage/infinia-csi-driver) |
 
 All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-driver/releases](https://github.com/DDNStorage/infinia-csi-driver/releases)
 
@@ -516,6 +516,38 @@ If you want to upgrade your Chart to different RED CSI driver release
 ```bash
 helm upgrade --namespace red-block-csi red-csi-driver-block ./deploy/charts/red-csi-driver-block
 ```
+
+## Steps to Increase Quota and Remount Volume to a Pod
+ 
+1. Increase the Quota of the Dataset
+ 
+Run the following command to update the dataset quota:
+```bash
+redcli dataset update <dataset> -t <tenant> -s <subtenant> -b <new_quota_size>
+```
+- [dataset] – Name of the dataset
+- [tenant] – Tenant name
+- [subtenant] – Subtenant name
+- [new_quota_size] – New quota size (e.g., 100Gi)
+ 
+2. Remount the Volume to the Pod
+ 
+To apply the changes, delete the existing pod and recreate it.
+  1.  Delete the existing pod:
+```bash
+kubectl delete pod <pod_name>
+```
+- [pod_name] – Name of the pod
+ 
+Do NOT delete the Persistent Volume (PV) or Persistent Volume Claim (PVC) during pod deletion to prevent data loss. The pod can be safely deleted and recreated without affecting stored data.
+ 
+  2.  Recreate the pod using the YAML manifest:
+```bash
+kubectl apply -f <pod_manifest.yaml>
+```
+  • [pod_manifest.yaml] – Path to the YAML file defining the pod
+ 
+After these steps, the pod should be running with the updated storage quota.
 
 ## Troubleshooting
 
