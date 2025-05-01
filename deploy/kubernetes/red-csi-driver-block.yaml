@@ -280,7 +280,7 @@ spec:
 #        - name: socket-dir
 #          mountPath: /var/lib/csi/sockets/pluginproxy
       - name: driver
-        image: quay.io/red/csi-driver-block:v1.1.1
+        image: quay.io/red/csi-driver-block:v1.1.2
         imagePullPolicy: Always
         args:
         - --nodeid=$(KUBE_NODE_NAME)
@@ -415,7 +415,7 @@ spec:
           capabilities:
             add: ['SYS_ADMIN']
           allowPrivilegeEscalation: true
-        image: quay.io/red/csi-driver-block:v1.1.1
+        image: quay.io/red/csi-driver-block:v1.1.2
         imagePullPolicy: Always
         args:
         - --nodeid=$(KUBE_NODE_NAME)
