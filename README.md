@@ -4,6 +4,13 @@
 ## Overview
 The Infinia Container Storage Interface (CSI) Driver provides a CSI interface used by Container Orchestrators (CO) to manage the lifecycle of Infinia cluster's  volumes over NVMEoF protocol.
 
+## Supported Infinia versions matrix
+
+|     Infinia Version   | Infinia CSI Block driver version|
+|-------------------|----------------|
+|  >= 2.2  | >= v1.2 [repository](https://github.com/DDNStorage/infinia-csi-driver) |
+
+
 ## Supported kubernetes versions matrix
 
 |     K8S Version   | Infinia CSI Block driver version|
@@ -21,7 +28,7 @@ All releases will be stored here - [https://github.com/DDNStorage/infinia-csi-dr
 |RO mode|GA|>= v1.0.1|>=1.22| yes |
 |Raw block device|GA|>= v1.0.1|>=1.22| yes |
 |StorageClass Secrets|Beta|>= v1.0.1|>=1.22| yes |
-|Expand volume|GA|>= v1.0.1|>=1.22| no |
+|Expand volume|GA|>= v1.2.0|>=1.22| yes |
 <!--
 |Creating and deleting snapshot|GA|>= v1.0.0|>= v1.0.0|>=1.17|
 |Provision volume from snapshot|GA|>= v1.0.0|>= v1.0.0|>=1.17|
@@ -448,6 +455,81 @@ kubectl apply -f examples/kubernetes/nginx-persistent-volume.yaml
 kubectl delete -f examples/kubernetes/nginx-persistent-volume.yaml
 ```
 
+### Volume Expansion
+The StorageClass must have `allowVolumeExpansion: true` set:
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: red-csi-driver-block-sc-nginx-dynamic
+provisioner: block.csi.red.ddn.com
+allowVolumeExpansion: true
+parameters:
+  account: "clu1/red/csiAccount"    # [REQUIRED] exact Infinia service account path (<cluster/teant/serviceAccountName>)
+  service: "red/csiService"         # [REQUIRED] exact Infinia service path (<subtenant/serviceName>)
+```
+Create a PVC using this StorageClass:
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: red-csi-driver-block-pvc-nginx-dynamic-expand
+spec:
+  storageClassName: red-csi-driver-block-sc-nginx-dynamic
+  accessModes:
+  - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+```
+Create a pod that uses this PVC:
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-dynamic-expand-volume
+spec:
+  containers:
+  - image: nginx
+    imagePullPolicy: IfNotPresent
+    name: nginx
+    ports:
+    - containerPort: 80
+      protocol: TCP
+    volumeMounts:
+    - mountPath: /mountedDisk
+      name: red-block-csi-driver-data
+  volumes:
+  - name: red-block-csi-driver-data
+    persistentVolumeClaim:
+      claimName: red-csi-driver-block-pvc-nginx-dynamic-expand
+      readOnly: false
+
+```
+
+Delete pod before expansion:
+```bash
+kubectl delete pod nginx-dynamic-expand-volume
+```
+
+To expand the volume, edit the PVC to request more storage:
+```bash
+kubectl patch pvc red-csi-driver-block-pvc-nginx-dynamic-expand --type=json -p='[{"op": "replace", "path": "/spec/resources/requests/storage", "value": "5Gi"}]'
+```
+
+Create the pod now that uses this PVC.
+
+
+Verify the expansion:
+```bash
+kubectl get pvc red-csi-driver-block-pvc-nginx-dynamic-expand
+```
+
+Verify the filesystem size inside the pod:
+```bash
+kubectl exec -it nginx-dynamic-expand-volume -- df -h /mountedDisk
+```
 <!--
 ### Cloned volumes
 

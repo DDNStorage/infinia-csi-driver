@@ -256,6 +256,7 @@ spec:
         - --feature-gates=Topology=true
         - --timeout=15s
         - --retry-interval-start=10s
+        - --worker-threads=3
         volumeMounts:
         - name: socket-dir
           mountPath: /var/lib/csi/sockets/pluginproxy
@@ -268,19 +269,21 @@ spec:
 #          volumeMounts:
 #            - name: socket-dir
 #              mountPath: /var/lib/csi/sockets/pluginproxy
-#      - name: csi-resizer
-#        image: registry.k8s.io/sig-storage/csi-resizer:v1.7.0
-#        args:
-#        - "--csi-address=$(ADDRESS)"
-#        env:
-#        - name: ADDRESS
-#          value: /var/lib/csi/sockets/pluginproxy/csi.sock
-#        imagePullPolicy: "IfNotPresent"
-#        volumeMounts:
-#        - name: socket-dir
-#          mountPath: /var/lib/csi/sockets/pluginproxy
+      - name: csi-resizer
+        image: registry.k8s.io/sig-storage/csi-resizer:v1.7.0
+        args:
+        - "--csi-address=$(ADDRESS)"
+        - "--leader-election"
+        - "--timeout=120s"
+        env:
+        - name: ADDRESS
+          value: /var/lib/csi/sockets/pluginproxy/csi.sock
+        imagePullPolicy: "IfNotPresent"
+        volumeMounts:
+        - name: socket-dir
+          mountPath: /var/lib/csi/sockets/pluginproxy
       - name: driver
-        image: quay.io/red/csi-driver-block:v1.1.2
+        image: quay.io/red/csi-driver-block:v1.2.0
         imagePullPolicy: Always
         args:
         - --nodeid=$(KUBE_NODE_NAME)
@@ -415,7 +418,7 @@ spec:
           capabilities:
             add: ['SYS_ADMIN']
           allowPrivilegeEscalation: true
-        image: quay.io/red/csi-driver-block:v1.1.2
+        image: quay.io/red/csi-driver-block:v1.2.0
         imagePullPolicy: Always
         args:
         - --nodeid=$(KUBE_NODE_NAME)

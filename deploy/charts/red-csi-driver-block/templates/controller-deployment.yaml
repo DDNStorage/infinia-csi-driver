@@ -39,11 +39,23 @@ spec:
             - --strict-topology
             - --immediate-topology=false
             - --feature-gates=Topology=true
+            - --worker-threads=3
           volumeMounts:
             - name: socket-dir
               mountPath: /var/lib/csi/sockets/pluginproxy
           resources:
 {{ toYaml .Values.controller.provisioner.resources | indent 12 }}
+        - name: {{ .Values.controller.resizer.name }}
+          image: "{{ .Values.controller.resizer.image.repository }}:{{ .Values.controller.resizer.image.tag }}"
+          args:
+            - --csi-address=/var/lib/csi/sockets/pluginproxy/{{ .Values.pluginSocketFile }}
+          env:
+            - name: ADDRESS
+              value: /var/lib/csi/sockets/pluginproxy/csi.sock
+          imagePullPolicy: {{ .Values.controller.resizer.image.pullPolicy }}
+          volumeMounts:
+            - name: socket-dir
+              mountPath: /var/lib/csi/sockets/pluginproxy/
         - name: {{ .Values.controller.driver.name }}
           image: "{{ .Values.driver.image.repository }}:{{ .Values.driver.image.tag }}"
           imagePullPolicy: {{ .Values.controller.driver.image.pullPolicy }}
